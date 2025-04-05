@@ -1,6 +1,6 @@
 esphome:
   min_version: 2025.2.0
-  name: esp32-louder
+  name: smartspeaker-bathroom
   platformio_options:
     board_build.flash_mode: dio
   on_boot:
@@ -13,50 +13,47 @@ esphome:
         volume: 10%
 
 esp32:
-  board: esp32-s3-devkitc-1
-  variant: ESP32S3
-  flash_size: 16MB
+  board: upesy_wrover
+  flash_size: 8MB
   framework:
     type: esp-idf
     version: recommended
     sdkconfig_options:
-      CONFIG_ESP32S3_DEFAULT_CPU_FREQ_240: "y"
-      CONFIG_ESP32S3_DATA_CACHE_64KB: "y"
-      CONFIG_ESP32S3_DATA_CACHE_LINE_64B: "y"
-      CONFIG_ESP32S3_INSTRUCTION_CACHE_32KB: "y"
+      CONFIG_BT_ALLOCATION_FROM_SPIRAM_FIRST: "y"  
+      CONFIG_BT_BLE_DYNAMIC_ENV_MEMORY: "y" 
 
-      CONFIG_ESP32_S3_BOX_BOARD: "y"
-
-      CONFIG_BT_ALLOCATION_FROM_SPIRAM_FIRST: "y"
-      CONFIG_BT_BLE_DYNAMIC_ENV_MEMORY: "y"
-
-      CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC: "y"
-      CONFIG_MBEDTLS_SSL_PROTO_TLS1_3: "y"  # TLS1.3 support isn't enabled by default in IDF 5.1.5
+      CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC: "y" 
+      CONFIG_MBEDTLS_SSL_PROTO_TLS1_3: "y"  # TLS1.3 support isn't enabled by default in IDF 5.1.5 
 
 # Enable logging
 logger:
   level: DEBUG
 
 # Enable Home Assistant API
+
 api:
-  encryption:
-    key: "xxx"
 
 ota:
-  - platform: esphome
-    password: "xxx"
+  platform: esphome
+  password: !secret ota_password_smartspeaker-bathroom
 
-wifi:
-  ssid: !secret wifi_ssid
-  password: !secret wifi_password
+
+### Optional if you want ethernet (then remove all wifi config) ###
+ethernet:
+  type: W5500
+  clk_pin: GPIO18
+  mosi_pin: GPIO23
+  miso_pin: GPIO19
+  cs_pin: GPIO05
+  interrupt_pin: GPIO35
+  reset_pin: GPIO14
+
   manual_ip:
-   static_ip: 192.168.2.65
-   gateway: 192.168.2.1
-   subnet: 255.255.255.0
-  # Enable fallback hotspot (captive portal) in case wifi connection fails
-  #ap:
-    #ssid: "Esp32-Louder Fallback Hotspot"
-    #password: "2SJ8qzBXk3SN"
+    static_ip: !secret static_ip_smartspeaker-bathroom
+    gateway: !secret manual_ip_gateway
+    subnet: !secret manual_ip_subnet
+    dns1: !secret manual_ip_dns1
+    dns2: !secret manual_ip_dns2
 
 #captive_portal:
 
@@ -70,25 +67,27 @@ external_components:
     refresh: 0s
 
 i2c:
-  sda: GPIO8
-  scl: GPIO9
-  frequency: 400kHz
+  id: i2c_component
+  sda: GPIO21
+  scl: GPIO27
   scan: True
+  frequency: 400kHz
+  timeout: 10ms
 
 audio_dac:
   - platform: tas5805m
     id: tas5805m_dac
-    enable_pin: GPIO17
+    enable_pin: GPIO33
 
 i2s_audio:
-  i2s_lrclk_pin: GPIO15
-  i2s_bclk_pin: GPIO14
+  i2s_lrclk_pin: GPIO25
+  i2s_bclk_pin: GPIO26
 
 speaker:
   - platform: i2s_audio
     id: speaker_id
     dac_type: external
-    i2s_dout_pin: GPIO16
+    i2s_dout_pin: GPIO22
     audio_dac: tas5805m_dac
     channel: stereo
     sample_rate: 48000
@@ -124,10 +123,10 @@ switch:
     optimistic: true
     restore_mode: ALWAYS_ON
     turn_on_action:
-      - lambda: !lambda |-
+      - lambda:  |-
           id(tas5805m_dac).set_deep_sleep_off();
     turn_off_action:
-      - lambda: !lambda |-
+      - lambda:  |-
           id(tas5805m_dac).set_deep_sleep_on();
 
 interval:
