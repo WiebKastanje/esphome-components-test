@@ -55,8 +55,6 @@ ethernet:
     dns1: !secret manual_ip_dns1
     dns2: !secret manual_ip_dns2
 
-#captive_portal:
-
 psram:
   mode: octal
   speed: 80MHz
